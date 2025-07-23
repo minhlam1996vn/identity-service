@@ -5,6 +5,7 @@ import com.lamldm.identity_service.dto.request.UserUpdateRequest;
 import com.lamldm.identity_service.entity.User;
 import com.lamldm.identity_service.exception.AppException;
 import com.lamldm.identity_service.exception.ErrorCode;
+import com.lamldm.identity_service.mapper.UserMapper;
 import com.lamldm.identity_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,19 +16,14 @@ import java.util.List;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserMapper userMapper;
 
     public User createUser(UserCreationRequest request) {
-        User user = new User();
-
         if (userRepository.existsByUsername(request.getUsername()))
-//            throw new RuntimeException();
             throw new AppException(ErrorCode.USER_EXISTED);
 
-        user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setDob(request.getDob());
+        User user = userMapper.toUser(request);
 
         return userRepository.save(user);
     }
@@ -35,10 +31,7 @@ public class UserService {
     public User updateUser(String userID, UserUpdateRequest request) {
         User user = getUser(userID);
 
-        user.setPassword(request.getPassword());
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setDob(request.getDob());
+        userMapper.updateUser(user, request);
 
         return userRepository.save(user);
     }
