@@ -1,5 +1,7 @@
 package com.lamldm.identity_service.exception;
 
+import static org.hibernate.query.sqm.tree.SqmNode.log;
+
 import com.lamldm.identity_service.dto.request.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,8 +11,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 // Khi có 1 exception xảy ra thì class này sẽ trả về lỗi thông qua RuntimeException
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException exception) {
+    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
+        log.error("handlingRuntimeException");
         ApiResponse apiResponse = new ApiResponse();
 
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
@@ -20,7 +24,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse> handleAppException(AppException exception) {
+    ResponseEntity<ApiResponse> handlingAppException(AppException exception) {
+        log.error("handlingAppException");
         ErrorCode errorCode = exception.getErrorCode();
         ApiResponse apiResponse = new ApiResponse();
 
@@ -32,6 +37,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
+        log.error("handlingValidation");
         String enumKey = exception.getFieldError().getDefaultMessage();
 
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
