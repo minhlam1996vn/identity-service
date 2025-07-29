@@ -4,7 +4,6 @@ import com.lamldm.identity_service.dto.request.ApiResponse;
 import com.lamldm.identity_service.dto.request.UserCreationRequest;
 import com.lamldm.identity_service.dto.request.UserUpdateRequest;
 import com.lamldm.identity_service.dto.response.UserResponse;
-import com.lamldm.identity_service.entity.User;
 import com.lamldm.identity_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -36,19 +35,25 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    UserResponse getUser(@PathVariable("userId") String userId) {
-        return userService.getUser(userId);
+    ApiResponse<UserResponse> getUser(@PathVariable("userId") String userId) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getUser(userId))
+                .build();
     }
 
     @PutMapping("/{userId}")
-    UserResponse updateUser(@PathVariable("userId") String userId, @RequestBody UserUpdateRequest request) {
-        return userService.updateUser(userId, request);
+    ApiResponse<UserResponse> updateUser(@PathVariable("userId") String userId, @RequestBody UserUpdateRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.updateUser(userId, request))
+                .build();
     }
 
     @DeleteMapping("/{userId}")
-    String deleteUser(@PathVariable("userId") String userId) {
+    ApiResponse<String> deleteUser(@PathVariable("userId") String userId) {
         userService.deleteUser(userId);
 
-        return "User has been deleted";
+        return ApiResponse.<String>builder()
+                .result("User has been deleted")
+                .build();
     }
 }
