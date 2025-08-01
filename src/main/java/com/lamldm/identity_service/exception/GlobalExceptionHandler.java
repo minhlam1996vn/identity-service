@@ -1,8 +1,7 @@
 package com.lamldm.identity_service.exception;
 
-import static org.hibernate.query.sqm.tree.SqmNode.log;
-
 import com.lamldm.identity_service.dto.request.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 // Khi có 1 exception xảy ra thì class này sẽ trả về lỗi thông qua RuntimeException
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
@@ -19,6 +19,7 @@ public class GlobalExceptionHandler {
 
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
         apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        log.error(apiResponse.getMessage());
 
         return ResponseEntity.badRequest().body(apiResponse);
     }
