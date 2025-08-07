@@ -74,7 +74,8 @@ public class UserService {
         userRepository.deleteById(userID);
     }
 
-    @PreAuthorize("hasRole('ADMIN')") // Kiểm tra điều kiện user là Admin trước khi vào method
+//    @PreAuthorize("hasRole('ADMIN')") // hasRole -> sẽ tự động thêm prefix "ROLE_" phía trước
+    @PreAuthorize("hasAnyAuthority('UPDATE_DATA')") // Dùng với permission
     public List<UserResponse> getUsers() {
         log.info("In method get Users");
         return userRepository.findAll().stream()
