@@ -2,11 +2,14 @@ package com.lamldm.identity_service.service;
 
 import com.lamldm.identity_service.dto.request.AuthenticationRequest;
 import com.lamldm.identity_service.dto.request.IntrospectRequest;
+import com.lamldm.identity_service.dto.request.LogoutRequest;
 import com.lamldm.identity_service.dto.response.AuthenticationResponse;
 import com.lamldm.identity_service.dto.response.IntrospectResponse;
+import com.lamldm.identity_service.entity.InvalidatedToken;
 import com.lamldm.identity_service.entity.User;
 import com.lamldm.identity_service.exception.AppException;
 import com.lamldm.identity_service.exception.ErrorCode;
+import com.lamldm.identity_service.repository.InvalidatedTokenRepository;
 import com.lamldm.identity_service.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -28,6 +31,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 import static org.hibernate.query.sqm.tree.SqmNode.log;
 
@@ -36,6 +40,7 @@ import static org.hibernate.query.sqm.tree.SqmNode.log;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
     UserRepository userRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
 
     @NonFinal // Đánh dấu để không thêm vào constructor
     @Value("${jwt.signerKey}") // Lấy dữ liệu từ file application.yaml
@@ -44,16 +49,10 @@ public class AuthenticationService {
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
 
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
-        SignedJWT signedJWT = SignedJWT.parse(token);
-
-        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
+        verifyToken(token);
 
         return IntrospectResponse.builder()
-                .valid(verified && expiryTime.after(new Date()))
+                .valid(true)
                 .build();
     }
 
@@ -71,6 +70,35 @@ public class AuthenticationService {
         return AuthenticationResponse.builder().token(token).authenticated(true).build();
     }
 
+    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+        var signToken = verifyToken(request.getToken());
+
+        String jit = signToken.getJWTClaimsSet().getJWTID();
+        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+    }
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        var verified = signedJWT.verify(verifier);
+
+        if (!(verified && expiryTime.after(new Date())))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+
+        return signedJWT;
+    }
+
     private String generateToken(User user) { // https://generate-random.org/encryption-key-generator
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
@@ -79,6 +107,7 @@ public class AuthenticationService {
                 .issuer("mldev.com") // domain
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()))
+                .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
                 .build();
 
