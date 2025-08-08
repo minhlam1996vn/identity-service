@@ -48,11 +48,16 @@ public class AuthenticationService {
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
+        boolean inValid = true;
 
-        verifyToken(token);
+        try {
+            verifyToken(token);
+        } catch (AppException e) {
+            inValid = false;
+        }
 
         return IntrospectResponse.builder()
-                .valid(true)
+                .valid(inValid)
                 .build();
     }
 
@@ -94,6 +99,9 @@ public class AuthenticationService {
         var verified = signedJWT.verify(verifier);
 
         if (!(verified && expiryTime.after(new Date())))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+
+        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         return signedJWT;
