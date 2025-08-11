@@ -15,3 +15,5 @@ spring:
 
 jwt:
   signerKey: 30cE2KCuTKlzWu5bGPGb3CNNZOINTGQAdfXECdHzAoe0SMVgyAFK55j+/rFOigS0
+  valid-duration: 20 # Thời gian hết hạn 1 token (thường là 1h: 3600)
+  refreshable-duration: 120 # Thời gian hết hạn refresh (thường là 100h: 360000)
