@@ -1,9 +1,6 @@
 package com.lamldm.identity_service.controller;
 
-import com.lamldm.identity_service.dto.request.ApiResponse;
-import com.lamldm.identity_service.dto.request.AuthenticationRequest;
-import com.lamldm.identity_service.dto.request.IntrospectRequest;
-import com.lamldm.identity_service.dto.request.LogoutRequest;
+import com.lamldm.identity_service.dto.request.*;
 import com.lamldm.identity_service.dto.response.AuthenticationResponse;
 import com.lamldm.identity_service.dto.response.IntrospectResponse;
 import com.lamldm.identity_service.service.AuthenticationService;
@@ -39,6 +36,15 @@ public class AuthenticationController {
         var result = authenticationService.introspect(request);
 
         return ApiResponse.<IntrospectResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshRequest request) throws ParseException, JOSEException {
+        var result = authenticationService.refreshToken(request);
+
+        return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
                 .build();
     }

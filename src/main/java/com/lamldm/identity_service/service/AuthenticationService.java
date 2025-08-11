@@ -3,6 +3,7 @@ package com.lamldm.identity_service.service;
 import com.lamldm.identity_service.dto.request.AuthenticationRequest;
 import com.lamldm.identity_service.dto.request.IntrospectRequest;
 import com.lamldm.identity_service.dto.request.LogoutRequest;
+import com.lamldm.identity_service.dto.request.RefreshRequest;
 import com.lamldm.identity_service.dto.response.AuthenticationResponse;
 import com.lamldm.identity_service.dto.response.IntrospectResponse;
 import com.lamldm.identity_service.entity.InvalidatedToken;
@@ -87,6 +88,29 @@ public class AuthenticationService {
                 .build();
 
         invalidatedTokenRepository.save(invalidatedToken);
+    }
+
+    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        var signJWT = verifyToken(request.getToken());
+
+        var jit = signJWT.getJWTClaimsSet().getJWTID();
+        var expiryTime = signJWT.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+
+        var username = signJWT.getJWTClaimsSet().getSubject();
+        var user = userRepository.findByUsername(username).orElseThrow(
+                () -> new AppException(ErrorCode.UNAUTHENTICATED)
+        );
+
+        var token = generateToken(user);
+
+        return AuthenticationResponse.builder().token(token).authenticated(true).build();
     }
 
     private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
