@@ -9,10 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -75,5 +77,32 @@ public class UserServiceTest {
                 () -> userService.createUser(request));
 
         Assertions.assertEquals(1002, exception.getErrorCode().getCode());
+    }
+
+    @Test
+    @WithMockUser(username = "john")
+    void getMyInfo_valid_success() {
+        var mockUser = new User();
+        mockUser.setUsername("john");
+        mockUser.setId("6b92af46");
+
+        when(userRepository.existsByUsername(anyString())).thenReturn(true);
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(mockUser));
+
+        var response = userService.getMyInfo();
+
+        Assertions.assertEquals("6b92af46", response.getId());
+        Assertions.assertEquals("john", response.getUsername());
+    }
+
+    @Test
+    @WithMockUser(username = "john")
+    void getMyInfo_userNotFound_error() {
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+
+        var exception = assertThrows(AppException.class,
+                () -> userService.getMyInfo());
+
+        Assertions.assertEquals(1005, exception.getErrorCode().getCode());
     }
 }
