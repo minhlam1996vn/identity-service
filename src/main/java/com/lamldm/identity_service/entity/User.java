@@ -1,11 +1,12 @@
 package com.lamldm.identity_service.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDate;
 import java.util.Set;
+
+import jakarta.persistence.*;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Getter
 @Setter
@@ -18,6 +19,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID) // Sử dụng uuid cho id
     String id;
+
     String username;
     String password;
     String firstName;

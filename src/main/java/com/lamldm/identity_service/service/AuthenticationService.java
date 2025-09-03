@@ -1,5 +1,20 @@
 package com.lamldm.identity_service.service;
 
+import static org.hibernate.query.sqm.tree.SqmNode.log;
+
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.StringJoiner;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
 import com.lamldm.identity_service.dto.request.AuthenticationRequest;
 import com.lamldm.identity_service.dto.request.IntrospectRequest;
 import com.lamldm.identity_service.dto.request.LogoutRequest;
@@ -17,24 +32,11 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-
-import java.text.ParseException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.StringJoiner;
-import java.util.UUID;
-
-import static org.hibernate.query.sqm.tree.SqmNode.log;
 
 @Service
 @RequiredArgsConstructor
@@ -59,20 +61,21 @@ public class AuthenticationService {
         var token = request.getToken();
         boolean inValid = true;
 
+        // spotless:off
         try {
-            verifyToken(token, false);
+                verifyToken(token, false);
         } catch (AppException e) {
             inValid = false;
         }
+        // spotless:on
 
-        return IntrospectResponse.builder()
-                .valid(inValid)
-                .build();
+        return IntrospectResponse.builder().valid(inValid).build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
-        var user = userRepository.findByUsername(authenticationRequest.getUsername())
+        var user = userRepository
+                .findByUsername(authenticationRequest.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
@@ -90,10 +93,8 @@ public class AuthenticationService {
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                    .id(jit)
-                    .expiryTime(expiryTime)
-                    .build();
+            InvalidatedToken invalidatedToken =
+                    InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
         } catch (AppException e) {
@@ -107,17 +108,14 @@ public class AuthenticationService {
         var jit = signJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signJWT.getJWTClaimsSet().getExpirationTime();
 
-        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                .id(jit)
-                .expiryTime(expiryTime)
-                .build();
+        InvalidatedToken invalidatedToken =
+                InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
         invalidatedTokenRepository.save(invalidatedToken);
 
         var username = signJWT.getJWTClaimsSet().getSubject();
-        var user = userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(ErrorCode.UNAUTHENTICATED)
-        );
+        var user =
+                userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
         var token = generateToken(user);
 
@@ -130,19 +128,17 @@ public class AuthenticationService {
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         Date expiryTime = (isRefresh)
-                ? new Date(
-                signedJWT.getJWTClaimsSet()
+                ? new Date(signedJWT
+                        .getJWTClaimsSet()
                         .getIssueTime()
                         .toInstant()
                         .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
-                        .toEpochMilli()
-        )
+                        .toEpochMilli())
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
 
-        if (!(verified && expiryTime.after(new Date())))
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (!(verified && expiryTime.after(new Date()))) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -157,7 +153,9 @@ public class AuthenticationService {
                 .subject(user.getUsername())
                 .issuer("mldev.com") // domain
                 .issueTime(new Date())
-                .expirationTime(new Date(Instant.now().plus(VALIDATION_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .expirationTime(new Date(Instant.now()
+                        .plus(VALIDATION_DURATION, ChronoUnit.SECONDS)
+                        .toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
                 .build();

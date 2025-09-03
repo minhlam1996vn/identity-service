@@ -1,19 +1,22 @@
 package com.lamldm.identity_service.controller;
 
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
 import com.lamldm.identity_service.dto.request.ApiResponse;
 import com.lamldm.identity_service.dto.request.UserCreationRequest;
 import com.lamldm.identity_service.dto.request.UserUpdateRequest;
 import com.lamldm.identity_service.dto.response.UserResponse;
 import com.lamldm.identity_service.service.UserService;
-import jakarta.validation.Valid;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -36,10 +39,9 @@ public class UserController {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         log.info("username: {}", authentication.getName());
-        authentication.getAuthorities().forEach(
-                grantedAuthority -> log.info("authority: {}", grantedAuthority.getAuthority()
-                )
-        );
+        authentication
+                .getAuthorities()
+                .forEach(grantedAuthority -> log.info("authority: {}", grantedAuthority.getAuthority()));
 
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.getUsers())
@@ -61,7 +63,8 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    ApiResponse<UserResponse> updateUser(@PathVariable("userId") String userId, @RequestBody UserUpdateRequest request) {
+    ApiResponse<UserResponse> updateUser(
+            @PathVariable("userId") String userId, @RequestBody UserUpdateRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(userId, request))
                 .build();
@@ -71,8 +74,6 @@ public class UserController {
     ApiResponse<String> deleteUser(@PathVariable("userId") String userId) {
         userService.deleteUser(userId);
 
-        return ApiResponse.<String>builder()
-                .result("User has been deleted")
-                .build();
+        return ApiResponse.<String>builder().result("User has been deleted").build();
     }
 }

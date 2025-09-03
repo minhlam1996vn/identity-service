@@ -9,7 +9,5 @@ import org.springframework.test.context.TestPropertySource;
 class IdentityServiceApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
-
+    void contextLoads() {}
 }

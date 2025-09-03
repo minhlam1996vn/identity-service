@@ -1,11 +1,13 @@
 package com.lamldm.identity_service.dto.request;
 
-import com.lamldm.identity_service.validator.DobConstraint;
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Size;
+
+import com.lamldm.identity_service.validator.DobConstraint;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
 
 @Data
 @Builder
@@ -18,6 +20,7 @@ public class UserCreationRequest {
 
     @Size(min = 8, message = "INVALID_PASSWORD")
     String password;
+
     String firstName;
     String lastName;
 
