@@ -3,8 +3,6 @@ package com.lamldm.identity_service.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.lamldm.identity_service.dto.request.UserCreationRequest;
-import com.lamldm.identity_service.dto.response.UserResponse;
-import com.lamldm.identity_service.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,16 +34,13 @@ public class UserControllerIntegrationTest {
         registry.add("spring.datasource.url", MY_SQL_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", MY_SQL_CONTAINER::getUsername);
         registry.add("spring.datasource.password", MY_SQL_CONTAINER::getPassword);
-        // registry.add("spring.datasource.driver_class", MY_SQL_CONTAINER::getDriverClassName);
-        registry.add("spring.datasource.driverClassName", () -> "com.mysql.cj.jdbc.Driver");
+        registry.add("spring.datasource.driver_class", MY_SQL_CONTAINER::getDriverClassName);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
     }
 
     @Autowired
     private MockMvc mockMvc;
-    private UserService userService;
     private UserCreationRequest userCreationRequest;
-    private UserResponse userResponse;
 
     @BeforeEach
     void initData() {
@@ -56,14 +51,6 @@ public class UserControllerIntegrationTest {
                 .firstName("John")
                 .lastName("Doe")
                 .password("12345678")
-                .dob(dob)
-                .build();
-
-        userResponse = UserResponse.builder()
-                .id("6b92af46")
-                .username("john")
-                .firstName("John")
-                .lastName("Doe")
                 .dob(dob)
                 .build();
     }
@@ -91,8 +78,7 @@ public class UserControllerIntegrationTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("result.username")
                         .value("john"))
                 .andExpect(MockMvcResultMatchers.jsonPath("result.firstName")
-                        .value("John"))
-        ;
+                        .value("John"));
 
         log.info("Result: {}", response.andReturn().getResponse().getContentAsString());
     }
